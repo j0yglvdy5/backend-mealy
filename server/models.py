@@ -55,6 +55,12 @@ class Order(db.Model, SerializerMixin):
     meal_option_id = db.Column(db.Integer, db.ForeignKey('meal_options.id'), nullable=False)
     date = db.Column(db.Date, default=datetime.utcnow)
     quantity = db.Column(db.Integer, nullable=False)
-    total_price = db.Column(db.Float, nullable=False)
+
+    # Relationship with MealOption
+    meal_option = db.relationship('MealOption', backref='orders')
 
     serialize_only = ('id', 'user_id', 'meal_option_id', 'date', 'quantity', 'total_price')
+
+    @property
+    def total_price(self):
+        return self.quantity * self.meal_option.price
