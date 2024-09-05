@@ -1,8 +1,8 @@
-"""initial migration
+"""initial migrations
 
-Revision ID: 0c43b92ceff7
+Revision ID: 68a13edb97d9
 Revises: 
-Create Date: 2024-09-01 12:47:17.084671
+Create Date: 2024-09-05 13:54:19.894962
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '0c43b92ceff7'
+revision = '68a13edb97d9'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -27,7 +27,8 @@ def upgrade():
     op.create_table('menus',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('date', sa.Date(), nullable=False),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('date')
     )
     op.create_table('users',
     sa.Column('id', sa.Integer(), nullable=False),
@@ -52,6 +53,7 @@ def upgrade():
     sa.Column('meal_option_id', sa.Integer(), nullable=False),
     sa.Column('date', sa.Date(), nullable=True),
     sa.Column('quantity', sa.Integer(), nullable=False),
+    sa.Column('status', sa.String(length=50), nullable=True),
     sa.ForeignKeyConstraint(['meal_option_id'], ['meal_options.id'], name=op.f('fk_orders_meal_option_id_meal_options')),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], name=op.f('fk_orders_user_id_users')),
     sa.PrimaryKeyConstraint('id')

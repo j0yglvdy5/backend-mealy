@@ -1,4 +1,5 @@
 # Standard library imports
+import os
 
 # Remote library imports
 from flask import Flask
@@ -7,14 +8,16 @@ from flask_migrate import Migrate
 from flask_restful import Api
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import MetaData
-
-# Local imports
+from flask_jwt_extended import JWTManager
 
 # Instantiate app, set attributes
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///mealy.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.json.compact = False
+
+# Set Flask secret key
+app.config['SECRET_KEY'] = os.urandom(24)  
 
 # Define metadata, instantiate db
 metadata = MetaData(naming_convention={
@@ -29,3 +32,6 @@ api = Api(app)
 
 # Instantiate CORS
 CORS(app)
+
+# Instantiate JWT Manager
+jwt = JWTManager(app)

@@ -1,10 +1,9 @@
 from sqlalchemy_serializer import SerializerMixin
-from sqlalchemy.ext.associationproxy import association_proxy
 from config import db
 from datetime import datetime
 from sqlalchemy import Table, Column, Integer, ForeignKey
 
-# Define the association table for the many-to-many relationship between MealOption and Menu
+# Association table for many-to-many relationship between MealOption and Menu
 meal_menu = Table('meal_menu', db.metadata,
     Column('meal_option_id', Integer, ForeignKey('meal_options.id'), primary_key=True),
     Column('menu_id', Integer, ForeignKey('menus.id'), primary_key=True)
@@ -19,8 +18,18 @@ class User(db.Model, SerializerMixin):
     password_hash = db.Column(db.String(128), nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
 
-    orders = db.relationship('Order', backref='user', lazy=True)
+    # Relationship to Order
+    orders = db.relationship('Order', back_populates='user')
+
     serialize_only = ('id', 'username', 'email', 'is_admin')
+
+    def serialize(self):
+        return {
+            'id': self.id,
+            'username': self.username,
+            'email': self.email,
+            'is_admin': self.is_admin
+        }
 
 class MealOption(db.Model, SerializerMixin):
     __tablename__ = 'meal_options'
@@ -29,16 +38,25 @@ class MealOption(db.Model, SerializerMixin):
     name = db.Column(db.String(100), nullable=False)
     price = db.Column(db.Float, nullable=False)
 
-    orders = db.relationship('Order', backref='meal_option', lazy=True)
-    menus = db.relationship('Menu', secondary=meal_menu, backref=db.backref('meal_options', lazy='dynamic'))
+    # Relationships to Order and Menu
+    orders = db.relationship('Order', back_populates='meal_option')
+    menus = db.relationship('Menu', secondary=meal_menu, back_populates='meal_options')
+
     serialize_only = ('id', 'name', 'price')
+
+    def serialize(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'price': self.price
+        }
 
 class Menu(db.Model, SerializerMixin):
     __tablename__ = 'menus'
 
     id = db.Column(db.Integer, primary_key=True)
-    date = db.Column(db.Date, nullable=False)
-    meal_options = db.relationship('MealOption', secondary=meal_menu, backref=db.backref('menus', lazy='dynamic'))
+    date = db.Column(db.Date, nullable=False, unique=True)
+    meal_options = db.relationship('MealOption', secondary=meal_menu, back_populates='menus')
 
     serialize_only = ('id', 'date', 'meal_options')
 
@@ -55,12 +73,24 @@ class Order(db.Model, SerializerMixin):
     meal_option_id = db.Column(db.Integer, db.ForeignKey('meal_options.id'), nullable=False)
     date = db.Column(db.Date, default=datetime.utcnow)
     quantity = db.Column(db.Integer, nullable=False)
+    status = db.Column(db.String(50), default='Pending')
 
-    # Relationship with MealOption
-    meal_option = db.relationship('MealOption', backref='orders')
+    # Relationships to User and MealOption
+    user = db.relationship('User', back_populates='orders')
+    meal_option = db.relationship('MealOption', back_populates='orders')
 
-    serialize_only = ('id', 'user_id', 'meal_option_id', 'date', 'quantity', 'total_price')
+    serialize_only = ('id', 'user_id', 'meal_option_id', 'date', 'quantity', 'total_price', 'status')
 
     @property
     def total_price(self):
         return self.quantity * self.meal_option.price
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user': self.user.username,
+            'meal': self.meal_option.name,
+            'quantity': self.quantity,
+            'totalPrice': self.total_price,
+            'status': self.status
+        }
